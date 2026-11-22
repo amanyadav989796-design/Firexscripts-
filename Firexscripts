@@ -1,206 +1,122 @@
--- Fire X Scripts | Secure Server-Side Loader (Updated URL Safe)
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fire X Scripts — Key Generator</title>
+<style>
+body{background:#0b0d12;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:16px}
+.card{width:100%;max-width:420px;background:#141821;border:1px solid #ff6b0055;border-radius:16px;padding:20px;box-shadow:0 15px 40px #000}
+h2{margin:0 0 4px;color:#ff8c3b}
+.sub{font-size:12px;color:#9ca3af;margin-bottom:16px}
+.box{background:#0f131a;border:1px solid #232936;border-radius:12px;padding:14px;margin-bottom:12px}
+input{width:100%;box-sizing:border-box;background:#090b10;border:1px solid #2e3646;color:#fff;padding:11px;border-radius:8px;margin-top:6px}
+.row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
+.btn{width:100%;padding:12px;border:none;border-radius:9px;font-weight:700;cursor:pointer;margin-top:8px;display:block;text-align:center;text-decoration:none;box-sizing:border-box}
+.fire{background:linear-gradient(135deg,#ff512f,#f09819);color:#fff}
+.dark{background:#1f2633;color:#e5e7eb;border:1px solid #323c4f}
+.green{background:#10b981;color:#fff}
+.key{background:#080a0e;border:1px dashed #ff6b00;color:#ffb36b;padding:14px;border-radius:8px;font-family:monospace;font-size:16px;text-align:center;margin-top:8px;word-break:break-all}
+.msg{margin-top:10px;font-size:13px;padding:10px;border-radius:8px;background:#1e293b;color:#93c5fd;display:none}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Fire X Scripts</h2>
+  <div class="sub">Official Key Generator & License Portal</div>
+  <div class="box">
+    <label style="font-size:12px;color:#9ca3af">Player Account ID</label>
+    <input id="acc" placeholder="Enter Account ID..." />
+    <button class="btn dark" id="chkBtn" onclick="loadStatus()">Check Stage & Progress</button>
+  </div>
+  <div id="panel" class="box hide">
+    <div class="row"><span>Next Stage:</span><strong id="stg" style="color:#ff8c3b">-</strong></div>
+    <div class="row"><span>Validity:</span><strong id="val">-</strong></div>
+    <div class="row"><span>Verified Ads:</span><strong id="ads">0 / 0</strong></div>
+    <a id="adBtn" href="#" class="btn fire hide" onclick="saveAccount()">Watch Required Ad</a>
+    <button id="clmBtn" class="btn green hide" onclick="claimKey()">Generate License Key</button>
+  </div>
+  <div id="keyBox" class="box hide">
+    <div style="font-size:13px;color:#6ee7b7;font-weight:700;text-align:center">KEY GENERATED SUCCESSFULLY!</div>
+    <div class="key" id="keyOut">-</div>
+    <button class="btn fire" onclick="copyKey()">Copy Key</button>
+    <div id="expOut" style="font-size:12px;color:#9ca3af;margin-top:8px;text-align:center"></div>
+  </div>
+  <div id="msg" class="msg"></div>
+</div>
+<script>
+const SB_HOST = "clgopzhigtwlcnonxewo" + ".supabase.co";
+const API = "https://" + SB_HOST + "/functions/v1/license-api";
 
-local SB_HOST = "clgopzhigtwlcnonxewo" .. ".supabase.co"
-local API_URL = "https://" .. SB_HOST .. "/functions/v1/license-api"
+function show(t){const m=document.getElementById("msg");m.textContent=t;m.style.display="block"}
+function saveAccount(){const id=document.getElementById("acc").value.trim();if(id)localStorage.setItem("firex_acc",id)}
 
-local GH_HOST = "amanyadav989796-design" .. ".github.io"
-local WEBSITE_URL = "https://" .. GH_HOST .. "/firex-keys/?account_id=" .. tostring(LocalPlayer.UserId)
-
-local KEY_FILE = "FireX_SavedKey.txt"
-local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
-local ACCOUNT_ID = tostring(LocalPlayer.UserId)
-local DEVICE_ID = (gethwid and gethwid()) or ACCOUNT_ID
-
-local function LoadFireXMainScript()
-    print("[Fire X Scripts] Key verified! Loading main script...")
-    -- YAHAN APNA MAIN FIRE X SCRIPT PASTE KAREIN:
-    -- loadstring(game:HttpGet("YOUR_MAIN_SCRIPT_RAW_URL"))()
-end
-
-local function postJson(endpoint, payload)
-    if not requestFunc then return nil end
-    local ok, res = pcall(function()
-        return requestFunc({
-            Url = API_URL .. endpoint,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode(payload)
-        })
-    end)
-    if ok and res and res.Body then
-        local decodeOk, data = pcall(function() return HttpService:JSONDecode(res.Body) end)
-        if decodeOk then return data end
-    end
-    return nil
-end
-
-local function verifyWithServer(keyToTest)
-    return postJson("/verify", {
-        account_id = ACCOUNT_ID,
-        device_id = DEVICE_ID,
-        key = keyToTest
-    })
-end
-
--- 1. Silent Auto-Check (Active key hone par Key UI skip hoga)
-if isfile and readfile and isfile(KEY_FILE) then
-    local savedKey = readfile(KEY_FILE)
-    if savedKey and savedKey ~= "" then
-        local res = verifyWithServer(savedKey)
-        if res and res.authenticated == true then
-            LoadFireXMainScript()
-            return
-        end
-    end
-end
-
--- 2. Key Verification UI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FireXKeySystem"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:GetService("CoreGui")
-
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 340, 0, 210)
-Frame.Position = UDim2.new(0.5, -170, 0.5, -105)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 24, 33)
-Frame.BorderSizePixel = 0
-Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
-
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, -20, 0, 36)
-Title.Position = UDim2.new(0, 10, 0, 8)
-Title.BackgroundTransparency = 1
-Title.Text = "Fire X Scripts — Key Verification"
-Title.TextColor3 = Color3.fromRGB(255, 140, 59)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-
-local StatusLbl = Instance.new("TextLabel", Frame)
-StatusLbl.Size = UDim2.new(1, -24, 0, 34)
-StatusLbl.Position = UDim2.new(0, 12, 0, 44)
-StatusLbl.BackgroundTransparency = 1
-StatusLbl.Text = "New user? Enter 7-day starter key or copy website link."
-StatusLbl.TextColor3 = Color3.fromRGB(180, 190, 205)
-StatusLbl.Font = Enum.Font.Gotham
-StatusLbl.TextSize = 12
-StatusLbl.TextWrapped = true
-
-local KeyBox = Instance.new("TextBox", Frame)
-KeyBox.Size = UDim2.new(1, -24, 0, 36)
-KeyBox.Position = UDim2.new(0, 12, 0, 86)
-KeyBox.BackgroundColor3 = Color3.fromRGB(12, 15, 22)
-KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-KeyBox.PlaceholderText = "Paste your Fire X Key here..."
-KeyBox.Text = ""
-KeyBox.Font = Enum.Font.Code
-KeyBox.TextSize = 13
-Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 8)
-
-local VerifyBtn = Instance.new("TextButton", Frame)
-VerifyBtn.Size = UDim2.new(0.47, 0, 0, 38)
-VerifyBtn.Position = UDim2.new(0, 12, 0, 134)
-VerifyBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
-VerifyBtn.Text = "Verify Key"
-VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 13
-Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 8)
-
-local CopyBtn = Instance.new("TextButton", Frame)
-CopyBtn.Size = UDim2.new(0.47, 0, 0, 38)
-CopyBtn.Position = UDim2.new(0.53, -12, 0, 134)
-CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 107, 0)
-CopyBtn.Text = "Copy Key Link"
-CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CopyBtn.Font = Enum.Font.GothamBold
-CopyBtn.TextSize = 13
-Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0, 8)
-
-CopyBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(WEBSITE_URL)
-        StatusLbl.Text = "Website link copied! Open in browser to get your key."
-    else
-        StatusLbl.Text = WEBSITE_URL
-    end
-end)
-
-VerifyBtn.MouseButton1Click:Connect(function()
-    local entered = KeyBox.Text:gsub("%s+", "")
-    if entered == "" then
-        StatusLbl.Text = "Please enter a key first!"
-        return
-    end
-    StatusLbl.Text = "Verifying with Fire X Server..."
-    local res = verifyWithServer(entered)
-    if res and res.authenticated == true then
-        if writefile then writefile(KEY_FILE, entered) end
-        ScreenGui:Destroy()
-        LoadFireXMainScript()
-    else
-        StatusLbl.Text = (res and res.error) or "Invalid or expired key!"
-    end
-end)
--- lite X script key system · SURVIVE THE KILLER
--- protected by pasteblox · https://pasteblox.com/k/5khbdzqwqj
-
-local cfg = {
-  slug = "5khbdzqwqj",
-  origin = "https://pasteblox.com",
-  file = "5khbdzqwqj",
-  layout = "card",
-  name = "lite X script",
-  title = "SURVIVE THE KILLER",
-  tagline = "⚠️ AFTER REDEEMING KEY EXECUTE THE SCRIPT AGAIN",
-  discord = nil,
-  icon = nil,
-  accent = "#8ccfff",
-  accentText = "#0e1115",
-  accentInk = "#8ccfff",
-  poweredBy = false,
-  freeKeys = true,
-  groups = {  },
-  hint = "keys last 24h · get one in your browser",
-  palette = { s1 = "#11161c", s2 = "#181e26", s3 = "#222933", inset = "#06090d", line = "#2b333e", line2 = "#3e4856", fg = "#f0f5fa", muted = "#a9b4c2", subtle = "#8a95a4", ok = "#7fdca4", danger = "#ff7a6b", warn = "#ffcf5c", discord = "#5865f2", onDiscord = "#ffffff", scrim = "#07090c", shadow = "#000000" },
-  copy = { getKey = "Get Key", redeem = "Redeem Key", checking = "checking…", close = "×", placeholder = "paste your key", footer = "secured by pasteblox", kicker = "KEY REQUIRED", idleFree = "get a key, paste it in, then redeem", idleOwner = "paste the key the owner gave you", pasteFirst = "paste your key first", thatsTheLink = "that's the link · open it in your browser, then paste the key here", checkingStatus = "checking your key…", accepted = "key accepted", linkCopied = "link copied · open it in your browser to get a key", linkCopiedOwner = "link copied · keys are given out by the owner, the page explains", linkToast = "key link copied", discordCopied = "discord invite copied · paste it in your browser", discordToast = "discord invite copied", noClipboard = "no clipboard here · copy the %s from the box", unreachable = "couldn't reach pasteblox. try again.", unknown = "something went wrong. try again.", invalid_key = "that key doesn't exist. check it or get a new one.", expired = "this key has expired. get a new one.", revoked = "this key was revoked by the owner.", wrong_device = "this key is locked to another device. ask the owner to reset it.", blacklisted = "you're blacklisted from this script.", disabled = "the key system for this script is off right now." },
-  ui = {
-    layout = "card",
-    w = 400,
-    h = 285,
-    anchor = { 0.5, 0.5 },
-    pos = { 0.5, 0, 0.5, 0 },
-    scrim = nil,
-    draggable = true,
-    toast = { w = 300, h = 34, y = 64 },
-    idle = "get a key, paste it in, then redeem",
-    nodes = {
-      { t = "frame", x = -6, y = 4, w = 412, h = 297, r = 16, bg = "#000000", transparency = 0.72 },
-      { t = "frame", x = 0, y = 0, w = 400, h = 285, r = 12, bg = "#11161c", stroke = "#3e4856" },
-      { t = "frame", role = "drag", x = 0, y = 0, w = 400, h = 64, bg = "#11161c", transparency = 1 },
-      { t = "frame", x = 20, y = 20, w = 40, h = 40, r = 10, bg = "#253440" },
-      { t = "text", text = "L", x = 20, y = 20, w = 40, h = 40, size = 18, weight = 700, color = "#8ccfff", align = "center" },
-      { t = "text", text = "lite X script", x = 72, y = 22, w = 272, h = 20, size = 17, weight = 700, color = "#f0f5fa" },
-      { t = "text", text = "SURVIVE THE KILLER", x = 72, y = 43, w = 272, h = 16, size = 13, weight = 500, color = "#a9b4c2" },
-      { t = "button", role = "close", text = "×", style = "ghost", x = 352, y = 26, w = 28, h = 28, size = 18, r = 8 },
-      { t = "text", text = "⚠️ AFTER REDEEMING KEY EXECUTE THE SCRIPT AGAIN", x = 20, y = 74, w = 360, h = 16, size = 12, weight = 500, color = "#8a95a4" },
-      { t = "frame", x = 20, y = 102, w = 360, h = 1, bg = "#2b333e" },
-      { t = "input", role = "box", x = 20, y = 117, w = 360, h = 42, r = 8, size = 14 },
-      { t = "text", text = "keys last 24h · get one in your browser", x = 20, y = 167, w = 360, h = 16, size = 12, weight = 500, color = "#8a95a4" },
-      { t = "button", role = "get", text = "Get Key", style = "secondary", x = 20, y = 197, w = 176, h = 40, size = 14, r = 8 },
-      { t = "button", role = "redeem", text = "Redeem Key", style = "primary", x = 204, y = 197, w = 176, h = 40, size = 14, r = 8 },
-      { t = "text", role = "status", text = "", x = 20, y = 249, w = 360, h = 16, size = 12, weight = 500, color = "#a9b4c2" },
-    },
-  },
+async function loadStatus(){
+  const id=document.getElementById("acc").value.trim();
+  if(!id)return show("Please enter Account ID first.");
+  saveAccount();
+  const btn=document.getElementById("chkBtn");
+  btn.textContent="Checking Server...";
+  try{
+    const r=await fetch(API+"/status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({account_id:id})});
+    const d=await r.json();
+    if(!d.success)return show(d.error||"Error");
+    document.getElementById("panel").classList.remove("hide");
+    document.getElementById("stg").textContent=d.next_stage;
+    document.getElementById("val").textContent=(d.next_validity_hours/24>=1?(d.next_validity_hours/24)+" Day(s)":d.next_validity_hours+" Hours");
+    document.getElementById("ads").textContent=d.completed_ads+" / "+d.required_ads+" Ads";
+    const a=document.getElementById("adBtn"),c=document.getElementById("clmBtn");
+    a.classList.add("hide");c.classList.add("hide");
+    if(d.has_active_key)return show("Active key valid until: "+new Date(d.active_expires_at).toLocaleString());
+    if(d.completed_ads>=d.required_ads){
+      c.classList.remove("hide");
+      c.textContent=d.required_ads===0?"Get 7-Day Starter Key":"Generate 24-Hour Key";
+    }else{
+      a.classList.remove("hide");
+      a.href=d.ad_link||"#";
+      a.textContent="Watch Ad ("+(d.required_ads-d.completed_ads)+" Required)";
+      show("Tap 'Watch Required Ad' and complete the Linkvertise task.");
+    }
+  }catch(e){
+    show("Network error: "+e.message);
+  }finally{
+    btn.textContent="Check Stage & Progress";
+  }
 }
 
--- hand the readable config above to the core below (obfuscated in production)
-local __boot = (getgenv and getgenv()) or _G
-__boot.__pasteblox_boot = cfg
+async function claimKey(){
+  const id=document.getElementById("acc").value.trim();
+  saveAccount();
+  const r=await fetch(API+"/claim-key",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({account_id:id})});
+  const d=await r.json();
+  if(!d.success)return show(d.error||"Failed");
+  document.getElementById("keyBox").classList.remove("hide");
+  document.getElementById("keyOut").textContent=d.key;
+  document.getElementById("expOut").textContent=d.expires_at?"Expires: "+new Date(d.expires_at).toLocaleString():"Paste in Lua loader to start 7-day timer!";
+  show(d.message);document.getElementById("clmBtn").classList.add("hide");
+}
 
--- This file was protected using Luraph Obfuscator v15.1 [https://lura.ph/]
+function copyKey(){navigator.clipboard.writeText(document.getElementById("keyOut").textContent);show("Key copied! Paste it in Fire X Scripts.")}
 
-return setmetatable({p=function(Z,B,S,R,l,_,f,D)if S<=80 then return 9,1+B,_,f;elseif S<=81 then local S,X,O=l[2],l[5],l[4];local b,y=S+X,X<=0;X,S=b>=O,b<=O;O=y and X or not y and S;l[2]=b;if O then return 115,B,b,f;else return 146,B,_,f;end;else local S=Z[67](D,1+R);return 128>S and 116 or 23,B,_,S;end;end,[92]=function(Z,Z,Z,Z,Z)return function(Z,B,B)local B=Z[1];local S=Z[2];return function()local Z,R,l=4;while true do if Z<=1 then if Z<=0 then B[4][B[6]]=(R+l)%268435456;B[4][B[6]]=(731865*B[4][B[6]]+229955693)%268435456;B[4][B[6]]=(682373*B[4][B[6]]+166887675)%268435456;Z,R,l=2,434271*B[4][B[6]]+121640411,268435456;else return;end;elseif Z<=2 then B[4][B[6]]=R%l;B[4][B[6]]=(310155*B[4][B[6]]+124104499)%268435456;B[4][B[6]]=(1043677*B[4][B[6]]+181377581)%268435456;B[4][B[6]],Z=(934899*B[4][B[6]]+19980125)%268435456,1;elseif Z<=3 then B[4][B[6]]=(R*l+146700117)%268435456;B[4][B[6]]=(581007*B[4][B[6]]+103104437)%268435456;S[4][S[6]]=(1*S[4][S[6]]+114339918)%268435456;Z,R,l=0,1032839*B[4][B[6]],88642069;else B[4][B[6]]=(145281*B[4][B[6]]+142439367)%268435456;B[4][B[6]]=(914593*B[4][B[6]]+39382555)%268435456;B[4][B[6]]=(356037*B[4][B[6]]+82488349)%268435456;Z,R,l=3,570431,B[4][B[6]];end;end;end;end;end,Lq=function(Z,B,S,R)local l,_,f,D,X,O,b,y=Z[100],Z[34],Z[12],2,B,R,S;while true do if D<=3 then if D<=1 then if D<=0 then D=l(X,":([%d]+)[^%a%A]-[:\10\13]")and 3 or 4;else O(b..y..": "..X,0);D=6;end;elseif D<=2 then D=_(X)=="string"and 0 or 5;else S=O[b];if S then D,O,b,y=1,f,"LPH:",S;else D,O,b=7,f,"LPH:";end;end;elseif D<=5 then if D<=4 then f(X,0);D=6;else f(X,1);D=6;end;elseif D<=6 then return;else D,y=1,"?";end;end;end,[47]=rawget,[73]=getfenv,h=function(Z,B,S,R,l,_,f,D,X,O,b)if O then if D<=32 then local O=Z[67](R,1+X);return O<128 and 33 or 131,X,S,f,l,O,_;else local O=l-128;local y=128*B+O;return 69,X+2,S,f,y,B,_;end;elseif D<=34 then local O=Z[67](R,X);return 128<=O and 41 or 136,X,S,O,l,B,_;elseif D<=35 then local D=Z[67](R,2+X);return D<128 and 45 or 89,X,S,f,l,B,D;else local D=Z[67](R,3+X);local Z,R,O,y,t=(S-128)*16384,2097152*(f-128),128*(b-128),D%128,D%128;local S=(D-t)*2097152;D=Z+R+(S+O+y);return 34,X+4,D,f,l,B,_;end;end,z=function(Z,B,S,R,l,_,f,D,X,O)if X<=141 then if X<=140 then return 50,_[5],B,S,f,D,l,O;else local b=Z[67](B,3+R);local y,t,M,n,d=16384*(S-128),(f-128)*2097152,128*(D-128),b%128,(b-b%128)*2097152;return 10,_,B,M+n+(d+t+y),4+R,D,l,O;end;elseif X<=142 then return 67,_,B,S,f,D+1,l,O;elseif X<=143 then local R=Z[67](B,1+D);return R>=128 and 12 or 132,_,B,S,f,D,R,O;else local R=Z[67](B,D+2);if R<128 then return 5,_,R,S,f,D,l,O;else return 75,_,B,S,f,D,l,R;end;end;end,_=function(Z,B,S,R,l,_,f,D,X,O)if R<=39 then if R<=37 then local b=Z[67](f,D+1);return 128>b and 25 or 93,D,B,_,S,b;elseif R<=38 then return 85,D+1,B,_,S,l;else local b=D-128;return 43,B*128+b,2,_,S,l;end;elseif R<=40 then local b=(S-128)*16384;local y=128*(O-128)+(b+X);return 85,3+D,B,_,y,l;elseif R<=41 then local R=Z[67](f,D+1);return 128>R and 88 or 117,D,B,R,S,l;else return 43,D,1,_,S,l;end;end,cq=function(Z,B,S,R,l,_,f,D)if B<=33 then if B<=32 then local X=Z[67](R,2+f);return X<128 and 30 or 20,f,l,D,S,X;else local X=Z[67](R,f+2);return 128>X and 12 or 16,f,l,D,X,_;end;elseif B<=34 then local X=Z[67](R,1+f);return X>=128 and 33 or 7,f,l,X,S,_;elseif B<=35 then local B=Z[67](R,1+f);return 128>B and 29 or 5,f,B,D,S,_;else return 6,f+1,l,D,S,_;end;end,[114]=setfenv,[40]=function(Z,Z,Z,Z,Z)return function(Z,B,B)local B=Z[1];local S=Z[2];local R=Z[3];return function()local Z=1;while true do if Z<=0 then return;else B[4][B[6]]=true;S[4][S[6]]=S[4][S[6]]-S[4][S[6]]%2+1;R[4][R[6]],Z=(218887*R[4][R[6]]+157396457)%268435456,0;end;end;end;end;end,[42]=buffer.readbits,[56]=buffer.writeu32,[79]=next,Cq=function(Z,B)local S={[1]=B};local B,R=Z:Ku(S);if B==1 then return R;end;end,[12]=error,E=function(Z,B,S,R,l,_,f,D,X,O,b,y,t)if S<=11 then if S<=10 then local M=Z[67](t,_);return 128>M and 172 or 147,O,_,M,D,l,b,X;else local M=D-23062;local n,d,v=Z[123](M),Z[123](M),1+0;local e=1-v;return 1,{v,nil,M+0,e,O},_,R,n,d,b,X;end;elseif S<=12 then local M=Z[67](t,R+2);return 128>M and 145 or 4,O,_,R,D,l,b,M;elseif S<=13 then local S=(b-128)*16384;local M=128*(B-128)+S+y;return 69,O,_,3+R,D,l,M,X;else local B=Z[67](t,f+1);return B>=128 and 30 or 7,O,B,R,D,l,b,X;end;end,[108]=bit32.lshift,R=function(Z,B,S,R,l,_,f,D,X,O,b,y)if f<=1 then if f<=0 then local t,M=Z[56],Z[122](y,_+l);t(R,l,(Z[95](Z.Jq[S],B,M)));return 26,Z.dq[S],D,_,X,b;else return 5,S,1+D,_,X,b;end;elseif f<=2 then local l,f,y=Z[67](R,D+3),(b-128)*16384,2097152*(O-128);local Z=(B-128)*128+(l%128+(f+(y+2097152*(l-l%128))));return 5,S,4+D,_,X,Z;else local Z=16384*(X-128);local B=(b-128)*128+Z+O;return 8,S,D,_+3,B,b;end;end,[89]=string.format,[34]=type,[26]=function(Z,Z,Z,Z)return function(Z,B,B)local B=Z[1];local S=Z[2];local R=Z[3];local l=Z[4];local _=Z[5];return function()local Z=0;while true do if Z<=0 then B[4][B[6]]=true;local B=S[4][S[6]][nil];R[4][R[6]](42865408,4);l[4][l[6]]=222469373;_[4][_[6]]();Z=1;else return;end;end;end;end;end,[68]=coroutine.status,[69]=buffer.writebits,[75]=UDim2.new,[18]=coroutine.yield,[76]=buffer.readstring,Zq=function(Z,B,S,R,l)local _,f,D,X,O,b,y,t,M,n,d,v,e=Z:Xu();local u,s,Q,U,I,j,q,c,J,A,V,K,F,h,H,P=f,D,S,B,R,l,X,O,b,y,t,M,n,d,v,e;while _ do if u<=91 then if u<=45 then if u<=22 then if u<=10 then if u<=4 then S,b,X,O,R=Z:Ou(q,u,s,Q,j,I,U);if S==1 then u,s,Q,U=b,X,O,R;elseif S==2 then return Q;end;else u,Q,I=Z:Mu(q,K,s,I,U,A,j,c,V,Q,u,J);end;elseif u<=16 then if u<=13 then u,Q,U,j,J=Z:Yu(h,c,u,A,Q,I,V,j,J,q,K,F,U);else u,Q,U,c=Z:yu(q,U,V,c,u,Q,j,I);end;elseif u<=19 then u,s,Q,q=Z:Eu(I,V,j,s,Q,c,u,A,F,U,q,K,J);else u,Q,I,j,q,c=Z:Su(K,j,h,c,A,V,Q,u,q,I,J,F,U);end;elseif u<=33 then if u<=27 then u,Q,U,j,K=Z:ou(u,j,Q,s,U,I,K,q);else u,s,Q,U,I,q=Z:cu(j,h,I,Q,s,K,q,V,u,U);end;elseif u<=39 then if u<=36 then u,s,Q,q,J=Z:Vu(I,q,u,Q,s,J);else u,Q,U,I,j,c=Z:hu(U,c,q,Q,u,I,j,J);end;elseif u<=42 then u,Q,U,I,c=Z:_u(s,q,c,I,U,Q,u);else u,j,c=Z:vu(s,c,q,Q,u,j);end;elseif u<=68 then if u<=56 then if u<=50 then if u<=47 then u,U,j,c=Z:Du(u,c,J,A,U,j,q);else u,Q,U,I,c,J,A,V,K,F,h=Z:Lu(A,U,Q,F,u,q,c,j,h,V,J,K,I);end;elseif u<=53 then u,U,j=Z:Ju(Q,u,I,J,q,j,U,c);else u,s,U,I,j,c,J,A,V,K,F=Z:du(F,U,K,s,q,I,j,c,V,J,u,A);end;elseif u<=62 then if u<=59 then u,s,c=Z:Cu(c,u,s);else u,s,I,j,c,J,A,V,K,F,h=Z:Zu(U,J,q,A,Q,F,V,I,c,u,j,K,s,h);end;else u,Q,U,j,q,c=Z:pu(c,U,u,j,q,Q);end;elseif u<=79 then if u<=73 then if u<=70 then u,Q,U,I=Z:wu(j,I,q,U,u,c,Q);else u,U,j,q=Z:su(u,q,U,j,V,c);end;elseif u<=76 then u,U,I,j,c=Z:Fu(V,u,I,A,j,K,Q,U,J,h,c,q);else u,Q,U,I=Z:Pu(j,Q,c,u,U,I,q);end;elseif u<=85 then if u<=82 then u,s,Q,q=Z:iu(I,F,q,Q,j,u,s,A,U);else u,s,U,P=Z:gu(U,P,q,s,I,u);end;elseif u<=88 then u,Q,U,h=Z:ku(J,U,q,s,I,j,Q,c,u,h);else u,Q=Z:fu(c,Q,U,q,u,I,j);end;elseif u<=137 then if u<=114 then if u<=102 then if u<=96 then if u<=93 then u,Q,U=Z:Gu(u,c,Q,J,U);else u,Q,U,j,c=Z:Qu(I,q,J,u,c,j,U,Q);end;elseif u<=99 then u,Q,U,j,q,c=Z:au(u,q,U,Q,j,c,I);else u,U,I,j,c,J,A,V,K,F,h=Z:uu(u,A,c,q,j,U,I,h,K,V,F,J,s);end;elseif u<=108 then u,s,Q,U,I,J=Z:nu(J,u,q,j,Q,U,F,c,I,s);else u,s,Q,I,j=Z:Iu(s,c,Q,j,U,V,u,I);end;elseif u<=125 then if u<=119 then u,s,Q,U,I,j,c=Z:ru(U,c,j,q,u,Q,s,I);elseif u<=122 then u,Q,U=Z:zu(q,U,c,j,I,Q,u);else u,Q=Z:tu(q,I,c,U,j,u,Q);end;elseif u<=131 then if u<=128 then u,s,Q,U,c,J,A,V,K,F,h,H=Z:Nu(q,s,H,Q,c,V,u,j,K,U,J,h,F,A,I);else u,Q,U=Z:ju(V,u,U,I,Q,s);end;else u,s,Q,U,q,c,J=Z:xu(Q,q,J,I,s,c,u,U);end;elseif u<=160 then if u<=148 then if u<=142 then if u<=139 then u,Q,U=Z:Hu(U,c,Q,J,u);else u,Q,U,j,J=Z:qu(U,J,c,V,u,j,q,Q);end;elseif u<=145 then u,Q,U,I,c,J,A,V,K,F=Z:Tu(I,J,Q,U,u,q,A,V,K,F,c);else u,j,q,c=Z:Bu(I,c,j,u,q);end;elseif u<=154 then if u<=151 then u,Q,U,J=Z:Ru(q,u,j,U,Q,I,J,c);else u,s,Q,U,I,j,c=Z:Aq(u,j,Q,q,V,I,U,c,s);end;elseif u<=157 then u,Q,U=Z:eq(q,j,u,I,Q,U);else u,s,Q,U,I,j=Z:mq(u,j,I,s,V,c,U,q,Q);end;elseif u<=171 then if u<=165 then u,s,U,j=Z:Uq(q,j,c,s,u,I,Q,U,H);else B=u<=168;y,n,t,e,M,D=Z:lq(U,j,A,Q,B,u,I,q,c,V);u,Q,U,j,c,A=y,n,t,e,M,D;end;elseif u<=177 then f=u<=174;local B,S,R,l=Z:bq(F,j,q,K,V,I,J,U,u,c,f,Q);u,Q,U,c=B,S,R,l;else u,Q,U,I,c=Z:Wq(I,c,P,u,F,q,h,Q,U);end;end;end,yq=function(Z,B,S,R,l,_,f,D,X)if l<=15 then local O=X-128;local b=_*128+O;return 1,D+2,b,f,B;elseif l<=16 then local l,_,O=Z[67](R,3+D),16384*(f-128),2097152*(B-128);local Z=(S-128)*128+(l%128+2097152*(l-l%128))+(O+_);return 26,4+D,X,Z,B;else local Z=B-128;local B=S*128+Z;return 6,2+D,X,f,B;end;end,Yu=function(Z,B,S,R,l,_,f,D,X,O,b,y,t,M)if R<=11 then local n=Z[67](b,M+2);return n<128 and 39 or 94,_,M,X,n;elseif R<=12 then D(y,O,(B(l,t,f)));local B=1;Z[60](Z.wq,B,(Z[95]((S+X*l)%256,Z[67](b,B+M),f)));return 3,Z[8](Z.wq,_),M,X,O;else local B=M+1;local S=Z[67](b,B);return 128>S and 92 or 166,_,B,S,O;end;end,[117]=function(Z,Z,Z,Z,Z,Z,Z)return function(Z,B,B)local B=Z[1];local S=Z[2];return function()local Z=0;while true do if Z<=0 then B[4][B[6]]=B[4][B[6]]-B[4][B[6]]%2+1;S[4][S[6]],Z=(388017*S[4][S[6]]+86281845)%268435456,1;else return;end;end;end;end;end,pu=function(Z,B,S,R,l,_,f)if R<=65 then if R<=63 then local D=1+S;local X=Z[67](_,D);return X>=128 and 142 or 70,D,X,l,_,B;elseif R<=64 then local D=S-128+B*128;return 175,f+2,D,l,_,B;else return 215<B and 106 or 63,f,S,l,_,B;end;elseif R<=66 then local D,X,O=Z[50](3,l),Z[59](l,2),3337;if 3==D then return 15,f,S,D,X,B;else return 161,f,S,D,X,O;end;elseif R<=67 then return 59,f,S+1,l,_,B;else local Z=S-128;local S=128*l+Z;return 62,2+f,S,l,_,B;end;end,ju=function(Z,B,S,R,l,_,f)if S<=129 then return 157,_+1,R;elseif S<=130 then local S=Z[67](B,3);local Z,B,D,X,O=16384*(_-128),(R-128)*2097152,(l-128)*128,S%128,(S-S%128)*2097152;return 117,B+X+(Z+(O+D)),4;else local Z,B,S=f[1],f[5],f[3];local l,D=Z+B,B<=0;B,Z=l>=S,l<=S;S=D and B or not D and Z;f[1]=l;if S then return 177,_,l;else return 81,_,R;end;end;end,[36]=string.pack,[0]=bit32.bnot,[29]=string.gsub,[112]=coroutine.close,Aq=function(Z,B,S,R,l,_,f,D,X,O)if B<=152 then local b=16384*(S-128);local y=128*(l-128)+b+X;return 66,O,R,3+D,f,y,X;elseif B<=153 then local B,b,y,t=1+D,(172+f)%256,2896997548,0;local M,n,d=Z[56],Z.wq,Z[122](l,t+B);M(n,t,(Z[95](Z.Jq[b],y,d)));return 125,O,R,B,y,Z.dq[b],4;else local B,l=O[2],Z[67](_,R);return 128<=l and 30 or 103,B,l,D,f,S,X;end;end,Eu=function(Z,B,S,R,l,_,f,D,X,O,b,y,t,M)if D<=17 then return 3,l[5],B,y;elseif D<=18 then M(X,f,(O(t,S,b)));local S,f=Z.dq[B],8;local B,D,X=Z[56],Z.wq,Z[122](y,_+f);B(D,f,(Z[95](Z.Jq[S],X,b)));f,X=Z.dq[S],Z.wq;D,B,S=Z[17](X,R),Z[17](X,4),Z[17](X,8);return 3,l,Z[121](D,B,S),y;else local B,S,f=Z[88](_,1+y%b,y%b+2),1+y,1+0;return 118,{S-f,f,R+0,l,nil},_,B;end;end,Pu=function(Z,B,S,R,l,_,f,D)if l<=77 then local X=1+_;local O,b,b=Z[67](D,X),X+1,_+2;X=Z[67](D,b);return 128>X and 85 or 116,O,b,X;elseif l<=78 then local l=Z[67](D,3+S);local Z,D,X,O,b=16384*(_-128),2097152*(B-128),128*(R-128),l%128,l%128;local B=2097152*(l-b);b=D+X+Z+B+O;return 62,S+4,b,f;else local Z=_-128+128*f;return 9,2+S,Z,f;end;end,[41]=xpcall,[87]=string.rep,c=function(Z,B,S,R,l,_,f,D,X)if _<=23 then local O=Z[67](f,2+R);return 128<=O and 101 or 76,R,S,D,O;elseif _<=24 then local _=Z[67](f,3+R);local Z,f,O,b=16384*(D-128),(l-128)*2097152,(X-128)*128,_%128;local l=Z+((_-_%128)*2097152+(O+b+f));return 65,R+4,S,l,B;else local Z=S-128;local S=D*128+Z;return 67,2+R,S,D,B;end;end,k=function(Z,B,S,R,l,_,f,D,X)if R<=101 then local O=Z[67](_,X+3);local b,y,t,M,n=16384*(S-128),(B-128)*2097152,(D-128)*128,O%128,O%128;local d=(O-n)*2097152;n=b+(y+t+d+M);return 110,4+X,l,n,B;elseif R<=102 then local R,O=16384*(B-128),(D-128)*128;local D=f+R+O;return 126,X+3,l,S,D;else local R=Z[67](_,1+X);return R>=128 and 35 or 59,X,R,S,B;end;end,B=function(Z)return true,16,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil;end,s=function(Z,B,S,R,l,_,f,D)if l<=86 then local l=Z[67](D,2+R);return 128<=l and 36 or 95,R,l,B;else local l=Z[67](D,3+R);local Z,D,X,O=(B-128)*16384,(S-128)*2097152,128*(_-128),l%128;local B=2097152*(l-l%128)+X+(D+(O+Z));return 126,4+R,f,B;end;end,[59]=bit32.rshift,j=function(Z,B,S,R,l,_,f,D,X,O,b)if B<=156 then return 78,b,1+l,_,D,X,R;elseif B<=157 then local B,y=Z[122](S,_),4+_;local t,M,n,d=Z[122](S,y),4+y,D-D%1,1+0;y=n-d;return 2,{b,B+0,nil,d,y},l,B,t,M,R;else local B=Z[67](S,_+3);local Z,S,y,t,M=16384*(R-128),2097152*(f-128),128*(O-128),B%128,B%128;local R=(B-M)*2097152;M=y+(S+Z)+(R+t);return 152,b,l,_+4,D,X,M;end;end,[80]=function(Z,B,B,B,B,B,B)return function(B,S)local S=B[1];local R=B[2];return function(B,l,_)local f,D=28;local X,O,b,y,t,M,n,d,v,e,u,s=B,l,_;while true do _=nil;if f<=14 then if f<=6 then if f<=2 then if f<=0 then B,l=Z[67](v,b),b+1;Z[48](y,t+M,B,n);f=11;elseif f<=1 then local B,l,Q=D[5],D[2],D[3];local U,I=B+l,l<=0;B,l=U>=Q,U<=Q;Q=I and B or not I and l;D[5]=U;if Q then f,M=23,U;else f=13;end;else f,b=24,b+1;end;elseif f<=4 then if f<=3 then f=n<128 and 15 or 10;else f,n,b=0,(n-128)*16384+(d-128)*128+e,b+3;end;elseif f<=5 then local B=Z[67](v,b+3);f,n,b=0,(n-128)*16384+(d-128)*2097152+(e-128)*128+B%128+(B-B%128)*2097152,b+4;else f,M,b=24,(M-128)*16384+(n-128)*128+d,b+3;end;elseif f<=10 then if f<=8 then if f<=7 then f,M,t=17,M-128+n*128,t+2;else f,M,t=17,(M-128)*16384+(n-128)*128+d,t+3;end;elseif f<=9 then local B=D[3];f,D=12,B;else local B=Z[67](v,b+2);f,d=B<128 and 6 or 20,B;end;elseif f<=12 then if f<=11 then return X,O;else local B,l=M-1,1+0;local Q=u-l;local U={D,l,B+0,nil,Q};f,D=1,U;end;elseif f<=13 then local B=D[1];X[5]=Z[113](X);local l,Q,U=Z:_q(X,v);local I=Z[67](v,U);f,D,X,O,b,M=I<128 and 2 or 27,B,l,Q,U,I;else f,b=0,b+1;end;elseif f<=22 then if f<=18 then if f<=16 then if f<=15 then f,M,b=24,M-128+n*128,b+2;else local B=Z[67](v,b+1);f,d=B<128 and 25 or 30,B;end;elseif f<=17 then local B,l=129,61;_=(b+O)%256;local Q,U,I=Z[109](M),b*16843009,M-M%4;local j,q=I-1,4+0;local c={nil,0-q,D,q,j+0};f,D,O,n,d,v,e,u=26,c,_,B,l,Q,U,I;else local B=Z[67](y,t+1);f,n=B<128 and 7 or 29,B;end;elseif f<=20 then if f<=19 then local B,l,u=Z[56],Z[122](y,t+s),S[4][S[6]][O];B(v,s,(Z[95](l,u,e)));_=R[4][R[6]][O];f,O=26,_;else local B=Z[67](v,b+3);f,M,b=24,(M-128)*16384+(n-128)*2097152+(d-128)*128+B%128+(B-B%128)*2097152,b+4;end;elseif f<=21 then f,t=17,t+1;else local B=Z[67](y,t+3);f,M,t=17,(M-128)*16384+(n-128)*2097152+(d-128)*128+B%128+(B-B%128)*2097152,t+4;end;elseif f<=26 then if f<=24 then if f<=23 then _=(n*O+d)%256;Z[60](v,M,(Z[95](Z[67](y,t+M),b,_)));f,O=1,_;else local B=Z[67](v,b);f,n=B<128 and 14 or 16,B;end;elseif f<=25 then f,n,b=0,n-128+d*128,b+2;else local B,S,R=D[2],D[4],D[5];local l,_=B+S,S<=0;B,S=l>=R,l<=R;R=_ and B or not _ and S;D[2]=l;if R then f,s=19,l;else f=9;end;end;elseif f<=28 then if f<=27 then local B=Z[67](v,b+1);f,n=3,B;else local B,S=X[4][O],X[7];local R=B+1;B=Z[67](S,R);f,y,t,M=B<128 and 21 or 18,S,R,B;end;elseif f<=29 then local B=Z[67](y,t+2);f,d=B<128 and 8 or 22,B;else local B=Z[67](v,b+2);f,e=B<128 and 4 or 5,B;end;end;end;end;end,D=function(Z,B,S,R,l,_,f,D,X,O,b)if X<=49 then if X<=48 then local y=Z[67](R,2+O);return y>=128 and 155 or 40,O,b,y;else _[b]=S;return 1,O,b,D;end;elseif X<=50 then local S=Z[67](R,O);return S<128 and 38 or 134,O,S,D;elseif X<=51 then B[l]=f;return 0,O,b,D;else return 34,O+3,b,D;end;end,Tu=function(Z,B,S,R,l,_,f,D,X,O,b,y)if _<=143 then return 3,Z[123](l,Z[67](f,R),R+1),l,B,y,S,D,X,O,b;elseif _<=144 then return y<=219 and 114 or 180,R,l,B,y,S,D,X,O,b;else local S,R,_,D=1+l,(B+3)%256,50529027,0;Z[56](Z.wq,D,(Z[95](Z[122](f,S+D),_,Z.Jq[R])));local B=Z.dq[R];D=4;return 18,S,_,B,D,Z[56],Z.wq,Z[122](f,D+S),Z.Jq[B],Z[95];end;end,V=function(Z,B,S,R,l,_,f,D,X,O,b)i
+(async function init(){
+  const p=new URLSearchParams(window.location.search);
+  const id=p.get("account_id")||localStorage.getItem("firex_acc")||"";
+  if(id)document.getElementById("acc").value=id;
+  if(p.get("ad_done")==="1"){
+    if(!id)return show("Account ID missing! Enter your Account ID above and tap Check Stage.");
+    if(!p.get("hash"))return show("Linkvertise Anti-Bypass hash missing! Enable Anti-Bypassing in Linkvertise Settings.");
+    show("Verifying Linkvertise completion...");
+    const tier=Number(p.get("tier")||1);
+    const vr=await fetch(API+"/verify-linkvertise",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({account_id:id,hash:p.get("hash"),tier})});
+    const vd=await vr.json();
+    window.history.replaceState({},"",window.location.pathname);
+    if(!vd.success)return show(vd.error||"Ad verification failed.");
+    await claimKey();
+    return;
+  }
+  if(id)loadStatus();
+})();
+</script>
+</body>
+</html>
